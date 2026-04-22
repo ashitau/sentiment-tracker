@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, LayoutGrid, Star, Clock } from "lucide-react";
+import { RefreshCw, LayoutGrid, Star, Clock, LogOut } from "lucide-react";
 import ConstellationMap from "./components/ConstellationMap/ConstellationMap";
 import StakeholderDashboard from "./components/StakeholderDashboard/StakeholderDashboard";
 import SectorHeatmap from "./components/SectorHeatmap/SectorHeatmap";
@@ -8,6 +8,8 @@ import NarrativeTimeline from "./components/NarrativeTimeline/NarrativeTimeline"
 import ValidationPanel from "./components/ValidationMetrics/ValidationMetrics";
 import SignalDetailPanel from "./components/common/SignalDetailPanel";
 import WeakSignalPanel from "./components/WeakSignals/WeakSignalPanel";
+import LoginPage from "./components/Auth/LoginPage";
+import { useAuth } from "./hooks/useAuth";
 import { MOCK_DASHBOARD } from "./utils/mock";
 import type { EntitySignal, KeywordNode, WeakSignal } from "./types";
 import { formatDistanceToNow } from "date-fns";
@@ -17,6 +19,34 @@ type Tab = "constellation" | "stakeholder" | "signals";
 const WINDOW_OPTIONS = [1, 3, 6, 12, 24];
 
 export default function App() {
+  const { status, email, requestLink, verifyToken, logout } = useAuth();
+
+  // Read magic-link token from URL on first load
+  const urlToken = new URLSearchParams(window.location.search).get("token");
+
+  // Show login page until authenticated
+  if (status === "checking") {
+    return (
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    return (
+      <LoginPage
+        onRequestLink={requestLink}
+        onVerifyToken={verifyToken}
+        verifyTokenFromUrl={urlToken}
+      />
+    );
+  }
+
+  return <Dashboard email={email!} onLogout={logout} />;
+}
+
+function Dashboard({ email, onLogout }: { email: string; onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<Tab>("constellation");
   const [windowHours, setWindowHours] = useState(6);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
@@ -102,6 +132,18 @@ export default function App() {
             <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
             Refresh
           </button>
+
+          {/* User + logout */}
+          <div className="flex items-center gap-2 pl-2 border-l border-brand-border">
+            <span className="text-xs text-gray-500 hidden sm:block">{email}</span>
+            <button
+              onClick={onLogout}
+              title="Sign out"
+              className="text-gray-500 hover:text-white transition-colors p-1 rounded"
+            >
+              <LogOut size={13} />
+            </button>
+          </div>
         </div>
       </header>
 
