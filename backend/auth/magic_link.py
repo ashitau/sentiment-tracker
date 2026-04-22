@@ -127,7 +127,7 @@ async def send_magic_link(email: str, token: str, base_url: str) -> bool:
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {api_key}"},
                 json={
-                    "from": "ET Now Sentiment Tracker <noreply@etnow-tracker.com>",
+                    "from": os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
                     "to": [email],
                     "subject": "Your login link — ET Now Sentiment Tracker",
                     "html": _email_html(link),
