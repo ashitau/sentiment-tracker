@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
+      "source": "/auth/:path*",
+      "destination": "https://sentiment-tracker-production-0bec.up.railway.app/auth/:path*"
+    },
+    {
       "source": "/api/:path*",
-      "destination": "https://sentiment-tracker-api.up.railway.app/api/:path*"
+      "destination": "https://sentiment-tracker-production-0bec.up.railway.app/api/:path*"
     }
   ],
   "headers": [
