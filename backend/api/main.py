@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI, Query, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from loguru import logger
 
 from backend.db.models import DashboardSnapshot, EntitySignalOut, ValidationMetrics, WeakSignalOut
@@ -50,7 +50,7 @@ app.add_middleware(
 # ── Auth routes (public — no token required) ──────────────────────────────────
 
 class MagicLinkRequest(BaseModel):
-    email: str
+    email: str  # validated against ALLOWED_EMAILS allowlist, not pydantic EmailStr
 
 
 @app.post("/auth/request")
