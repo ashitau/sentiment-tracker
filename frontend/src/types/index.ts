@@ -68,6 +68,33 @@ export interface SectorHeatmapEntry {
   plain_label: string;
 }
 
+export interface CausalPath {
+  hops: string[];
+  market_entity: string;
+  affected_sector: string;
+  causal_score: number;
+  relationship_chain: string[];
+  plain_explanation: string;
+}
+
+export interface WeakSignal {
+  raw_topic: string;
+  normalised_topic: string;
+  source: string;
+  mention_count: number;
+  burst_score: number;
+  top_entity: string;
+  top_sector: string;
+  top_causal_score: number;
+  causal_chain_plain: string;
+  hop_count: number;
+  causal_paths: CausalPath[];
+  confidence_tier: "Exploratory";
+  analyst_note: string;
+  detected_at: string;
+  status: "unreviewed" | "promoted" | "dismissed";
+}
+
 export interface DashboardSnapshot {
   generated_at: string;
   top_signals: EntitySignal[];
@@ -75,4 +102,5 @@ export interface DashboardSnapshot {
   validation: ValidationMetrics;
   trending_keywords: KeywordNode[];
   sector_heatmap: Record<string, SectorHeatmapEntry>;
+  weak_signals: WeakSignal[];
 }

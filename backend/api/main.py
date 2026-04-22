@@ -9,7 +9,7 @@ from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from backend.db.models import DashboardSnapshot, EntitySignalOut, ValidationMetrics
+from backend.db.models import DashboardSnapshot, EntitySignalOut, ValidationMetrics, WeakSignalOut
 
 
 @asynccontextmanager
@@ -96,6 +96,27 @@ async def get_sector_heatmap(window_hours: int = Query(default=6)):
     if snapshot is None:
         return {}
     return snapshot.sector_heatmap
+
+
+@app.get("/api/weak-signals", response_model=list[WeakSignalOut])
+async def get_weak_signals(
+    window_hours: int = Query(default=6),
+    min_causal_score: float = Query(default=0.35, description="Minimum causal graph score"),
+    sector: str = Query(default=None, description="Filter by affected sector"),
+):
+    """
+    Non-financial trending topics with credible supply-chain linkage to listed entities.
+    Always labelled Exploratory — require analyst review before acting on them.
+    """
+    from backend.api.routes.pipeline import get_latest_snapshot
+    snapshot = await get_latest_snapshot(window_hours)
+    if snapshot is None:
+        return []
+    signals = snapshot.weak_signals
+    if sector:
+        signals = [s for s in signals if s.top_sector == sector]
+    signals = [s for s in signals if s.top_causal_score >= min_causal_score]
+    return signals
 
 
 @app.get("/api/keywords")

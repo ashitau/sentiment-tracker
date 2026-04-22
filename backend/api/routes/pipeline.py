@@ -11,16 +11,18 @@ from loguru import logger
 
 from backend.db.models import (
     DashboardSnapshot, EntitySignalOut, TopicClusterOut,
-    ValidationMetrics, RawDocument,
+    ValidationMetrics, RawDocument, WeakSignalOut, CausalPathOut,
 )
 from backend.ingestion.reddit_scraper import run_full_ingestion
 from backend.ingestion.google_trends import (
     fetch_sector_trends, trends_to_documents,
 )
+from backend.ingestion.broad_scraper import run_broad_ingestion
 from backend.nlp.entity_extractor import extract_entities
 from backend.nlp.sentiment import analyse_batch, aggregate_entity_sentiment
 from backend.nlp.topic_modeler import fit_topics, extract_topic_clusters
 from backend.nlp.scorer import EntitySignal, rank_signals
+from backend.nlp.weak_signal_detector import detect_weak_signals, WeakSignal
 
 # In-memory cache — replace with Redis for production
 _snapshot_cache: Optional[DashboardSnapshot] = None
@@ -138,6 +140,16 @@ async def run_pipeline(window_hours: int = 6) -> DashboardSnapshot:
     topic_model, topic_assignments, _ = fit_topics(texts[:2000])  # cap for speed
     clusters = extract_topic_clusters(topic_model, texts[:2000], topic_assignments)
 
+    # Weak signal pipeline — runs independently on broad (non-financial) ingestion
+    broad_topics: list[dict] = []
+    try:
+        broad_topics = await run_broad_ingestion()
+    except Exception as exc:
+        logger.warning(f"Broad ingestion failed (non-fatal): {exc}")
+
+    weak_signals_raw = detect_weak_signals(broad_topics) if broad_topics else []
+    weak_signals_out = [_weak_signal_to_out(ws) for ws in weak_signals_raw[:20]]
+
     # Build outputs
     signals_out = [_signal_to_out(s) for s in ranked]
     clusters_out = [_cluster_to_out(c) for c in clusters[:15]]
@@ -152,6 +164,7 @@ async def run_pipeline(window_hours: int = 6) -> DashboardSnapshot:
         validation=validation,
         trending_keywords=keywords,
         sector_heatmap=sector_heatmap,
+        weak_signals=weak_signals_out,
     )
 
 
@@ -177,6 +190,36 @@ def _signal_to_out(s: EntitySignal) -> EntitySignalOut:
         sources=s.sources,
         first_seen=s.first_seen,
         last_seen=s.last_seen,
+    )
+
+
+def _weak_signal_to_out(ws: WeakSignal) -> WeakSignalOut:
+    return WeakSignalOut(
+        raw_topic=ws.raw_topic,
+        normalised_topic=ws.normalised_topic,
+        source=ws.source,
+        mention_count=ws.mention_count,
+        burst_score=ws.burst_score,
+        top_entity=ws.top_entity,
+        top_sector=ws.top_sector,
+        top_causal_score=ws.top_causal_score,
+        causal_chain_plain=ws.causal_chain_plain,
+        hop_count=ws.hop_count,
+        causal_paths=[
+            CausalPathOut(
+                hops=p.hops,
+                market_entity=p.market_entity,
+                affected_sector=p.affected_sector,
+                causal_score=p.causal_score,
+                relationship_chain=p.relationship_chain,
+                plain_explanation=p.plain_explanation,
+            )
+            for p in ws.causal_paths
+        ],
+        confidence_tier=ws.confidence_tier,
+        analyst_note=ws.analyst_note,
+        detected_at=ws.detected_at,
+        status=ws.status,
     )
 
 

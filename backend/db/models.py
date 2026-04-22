@@ -82,6 +82,38 @@ class ValidationMetrics(BaseModel):
     accuracy_label: Optional[str] = None    # "Predictive (>70%)", "Indicative", "Exploratory"
 
 
+class CausalPathOut(BaseModel):
+    hops: list[str]
+    market_entity: str
+    affected_sector: str
+    causal_score: float
+    relationship_chain: list[str]
+    plain_explanation: str
+
+
+class WeakSignalOut(BaseModel):
+    """
+    A non-financial trending topic that has a credible supply-chain or macro
+    linkage to a listed entity. Always labelled 'Exploratory' — never promoted
+    to main feed without analyst review.
+    """
+    raw_topic: str
+    normalised_topic: str
+    source: str
+    mention_count: int
+    burst_score: float
+    top_entity: str
+    top_sector: str
+    top_causal_score: float
+    causal_chain_plain: str
+    hop_count: int
+    causal_paths: list[CausalPathOut]
+    confidence_tier: str               # always "Exploratory"
+    analyst_note: str
+    detected_at: str
+    status: str                        # "unreviewed" | "promoted" | "dismissed"
+
+
 class DashboardSnapshot(BaseModel):
     generated_at: str
     top_signals: list[EntitySignalOut]
@@ -89,3 +121,4 @@ class DashboardSnapshot(BaseModel):
     validation: ValidationMetrics
     trending_keywords: list[dict]       # [{word, weight, sector, sentiment}]
     sector_heatmap: dict[str, dict]     # sector → {score, direction, mention_count}
+    weak_signals: list[WeakSignalOut] = []

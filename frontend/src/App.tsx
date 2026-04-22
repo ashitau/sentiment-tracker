@@ -7,11 +7,12 @@ import SectorHeatmap from "./components/SectorHeatmap/SectorHeatmap";
 import NarrativeTimeline from "./components/NarrativeTimeline/NarrativeTimeline";
 import ValidationPanel from "./components/ValidationMetrics/ValidationMetrics";
 import SignalDetailPanel from "./components/common/SignalDetailPanel";
+import WeakSignalPanel from "./components/WeakSignals/WeakSignalPanel";
 import { MOCK_DASHBOARD } from "./utils/mock";
-import type { EntitySignal, KeywordNode } from "./types";
+import type { EntitySignal, KeywordNode, WeakSignal } from "./types";
 import { formatDistanceToNow } from "date-fns";
 
-type Tab = "constellation" | "stakeholder";
+type Tab = "constellation" | "stakeholder" | "signals";
 
 const WINDOW_OPTIONS = [1, 3, 6, 12, 24];
 
@@ -21,6 +22,7 @@ export default function App() {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [selectedSignal, setSelectedSignal] = useState<EntitySignal | null>(null);
   const [activeSector, setActiveSector] = useState<string | null>(null);
+  const [weakSignals, setWeakSignals] = useState(MOCK_DASHBOARD.weak_signals);
 
   // Use mock data — swap for useDashboard(windowHours) when backend is live
   const data = MOCK_DASHBOARD;
@@ -35,6 +37,14 @@ export default function App() {
     setSelectedWord(node.word);
     const match = data.top_signals.find(s => s.canonical_name === node.word);
     setSelectedSignal(match ?? null);
+  }
+
+  function handlePromote(signal: WeakSignal) {
+    setWeakSignals(prev => prev.map(s => s.raw_topic === signal.raw_topic ? { ...s, status: "promoted" as const } : s));
+  }
+
+  function handleDismiss(signal: WeakSignal) {
+    setWeakSignals(prev => prev.map(s => s.raw_topic === signal.raw_topic ? { ...s, status: "dismissed" as const } : s));
   }
 
   function handleSectorClick(sector: string) {
@@ -81,6 +91,7 @@ export default function App() {
           <div className="flex items-center gap-1 bg-brand-panel rounded-lg p-1 border border-brand-border">
             <TabBtn id="constellation" active={activeTab === "constellation"} onClick={() => setActiveTab("constellation")} icon={<Star size={13} />} label="Constellation" />
             <TabBtn id="stakeholder"  active={activeTab === "stakeholder"}  onClick={() => setActiveTab("stakeholder")}  icon={<LayoutGrid size={13} />} label="Briefing" />
+            <TabBtn id="signals"      active={activeTab === "signals"}      onClick={() => setActiveTab("signals")}      icon={<span className="text-violet-400 font-bold text-xs">⬡</span>} label={`Signals to Watch${weakSignals.filter(s => s.status === "unreviewed").length > 0 ? ` · ${weakSignals.filter(s => s.status === "unreviewed").length}` : ""}`} />
           </div>
 
           <button
@@ -136,7 +147,7 @@ export default function App() {
                 <NarrativeTimeline clusters={data.topic_clusters} />
               </div>
             </motion.div>
-          ) : (
+          ) : activeTab === "stakeholder" ? (
             <motion.div
               key="stakeholder"
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -145,6 +156,18 @@ export default function App() {
               <StakeholderDashboard
                 validation={data.validation}
                 topSignals={data.top_signals}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="signals"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="h-full overflow-hidden"
+            >
+              <WeakSignalPanel
+                signals={weakSignals}
+                onPromote={handlePromote}
+                onDismiss={handleDismiss}
               />
             </motion.div>
           )}
