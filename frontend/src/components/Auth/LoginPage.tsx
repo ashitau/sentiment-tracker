@@ -72,7 +72,7 @@ export default function LoginPage({ onRequestLink, onVerifyToken, verifyTokenFro
               <motion.div key="email" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <h2 className="text-white font-medium mb-1">Sign in</h2>
                 <p className="text-gray-500 text-sm mb-5">
-                  Enter your ET Now email address. We'll send you a one-click login link.
+                  Enter your Times Group email address. We'll send you a one-click login link.
                 </p>
                 <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                   <div className="relative">
@@ -81,7 +81,7 @@ export default function LoginPage({ onRequestLink, onVerifyToken, verifyTokenFro
                       type="email"
                       value={email}
                       onChange={e => setEmail(e.target.value)}
-                      placeholder="you@etnow.com"
+                      placeholder="you@timesgroup.com"
                       required
                       className="w-full bg-brand-bg border border-brand-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
                     />
