@@ -1,26 +1,10 @@
-# ── API server (Railway) ──────────────────────────────────────────────────────
-# Installs fast. NLP models are lazy-loaded when the pipeline actually runs.
-
-# Web framework
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
 pydantic==2.7.1
 email-validator>=2.1
 python-dotenv==1.0.1
-
-# Data ingestion
+httpx==0.27.0
 praw==7.7.1
 pytrends==4.9.2
-httpx==0.27.0
-feedparser==6.0.11
-
-
-# Storage (MongoDB only — Postgres/ES removed from MVP)
-motor==3.4.0
-redis==5.0.4
-
-# Utilities
-apscheduler==3.10.4
 loguru==0.7.2
-tqdm==4.66.4
 networkx==3.3

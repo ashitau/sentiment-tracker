@@ -27,6 +27,9 @@ ALLOWED_ORIGINS = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Sentiment Tracker API starting up")
+    logger.info(f"PYTHONPATH={os.environ.get('PYTHONPATH', 'not set')}")
+    logger.info(f"PORT={os.environ.get('PORT', 'not set')}")
+    logger.info(f"APP_ENV={os.environ.get('APP_ENV', 'not set')}")
     yield
     logger.info("Sentiment Tracker API shutting down")
 

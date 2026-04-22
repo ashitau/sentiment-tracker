@@ -2,15 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps for praw, pytrends, motor
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Lean requirements only — NLP deps are NOT installed here
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip check
 
 COPY backend/ ./backend/
 
