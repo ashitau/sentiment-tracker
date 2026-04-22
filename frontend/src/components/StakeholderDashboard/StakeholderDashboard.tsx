@@ -4,7 +4,7 @@
  * No jargon, no raw model scores — just signal quality, confidence, and narrative.
  */
 import { motion } from "framer-motion";
-import { CheckCircle, AlertTriangle, Clock, Globe, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { CheckCircle, AlertTriangle, Clock, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { ValidationMetrics, EntitySignal } from "../../types";
 
 interface Props {

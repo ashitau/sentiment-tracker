@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, TrendingDown, Minus, ExternalLink } from "lucide-react";
+import { X, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { EntitySignal } from "../../types";
 
 interface Props {
@@ -91,7 +91,7 @@ export default function SignalDetailPanel({ signal, onClose }: Props) {
   );
 }
 
-function ScoreRow({ label, value, description }: { label: string; value: number; description: string }) {
+function ScoreRow({ label, value }: { label: string; value: number; description: string }) {
   const pct = Math.round(value * 100);
   const color = pct >= 70 ? "bg-green-500" : pct >= 40 ? "bg-amber-500" : "bg-gray-600";
 

@@ -119,9 +119,9 @@ function Dashboard({ email, onLogout }: { email: string; onLogout: () => void })
 
           {/* Tab toggle */}
           <div className="flex items-center gap-1 bg-brand-panel rounded-lg p-1 border border-brand-border">
-            <TabBtn id="constellation" active={activeTab === "constellation"} onClick={() => setActiveTab("constellation")} icon={<Star size={13} />} label="Constellation" />
-            <TabBtn id="stakeholder"  active={activeTab === "stakeholder"}  onClick={() => setActiveTab("stakeholder")}  icon={<LayoutGrid size={13} />} label="Briefing" />
-            <TabBtn id="signals"      active={activeTab === "signals"}      onClick={() => setActiveTab("signals")}      icon={<span className="text-violet-400 font-bold text-xs">⬡</span>} label={`Signals to Watch${weakSignals.filter(s => s.status === "unreviewed").length > 0 ? ` · ${weakSignals.filter(s => s.status === "unreviewed").length}` : ""}`} />
+            <TabBtn active={activeTab === "constellation"} onClick={() => setActiveTab("constellation")} icon={<Star size={13} />} label="Constellation" />
+            <TabBtn active={activeTab === "stakeholder"}  onClick={() => setActiveTab("stakeholder")}  icon={<LayoutGrid size={13} />} label="Briefing" />
+            <TabBtn active={activeTab === "signals"}      onClick={() => setActiveTab("signals")}      icon={<span className="text-violet-400 font-bold text-xs">⬡</span>} label={`Signals to Watch${weakSignals.filter(s => s.status === "unreviewed").length > 0 ? ` · ${weakSignals.filter(s => s.status === "unreviewed").length}` : ""}`} />
           </div>
 
           <button
@@ -220,9 +220,9 @@ function Dashboard({ email, onLogout }: { email: string; onLogout: () => void })
 }
 
 function TabBtn({
-  id, active, onClick, icon, label,
+  active, onClick, icon, label,
 }: {
-  id: string; active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
 }) {
   return (
     <button

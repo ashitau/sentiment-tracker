@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import type { TopicCluster } from "../../types";
 
 interface Props {

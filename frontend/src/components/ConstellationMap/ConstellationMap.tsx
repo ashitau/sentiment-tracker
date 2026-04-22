@@ -82,7 +82,7 @@ export default function ConstellationMap({ keywords, onNodeClick, selectedWord }
 
     // Force simulation
     const sim = d3.forceSimulation<SimNode>(nodes)
-      .force("charge", d3.forceManyBody().strength(d => -d.r * 12))
+      .force("charge", d3.forceManyBody<SimNode>().strength(d => -d.r * 12))
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide<SimNode>().radius(d => d.r + 8).iterations(3))
       .force("x", d3.forceX(width / 2).strength(0.05))
