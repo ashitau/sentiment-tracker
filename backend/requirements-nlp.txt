@@ -1,0 +1,28 @@
+# ── NLP pipeline (local / dedicated worker) ───────────────────────────────────
+# Run: pip install -r requirements.txt -r requirements-nlp.txt
+# Do NOT install on Railway — torch alone is 2+ GB and will timeout.
+
+-r requirements.txt
+
+# ML core
+numpy>=1.26,<2.0
+pandas>=2.2,<3.0
+scikit-learn>=1.4,<2.0
+scipy>=1.13,<2.0
+
+# Transformers — FinBERT sentiment
+transformers>=4.41,<5.0
+torch>=2.3,<3.0
+
+# Sentence embeddings
+sentence-transformers>=3.0,<4.0
+
+# Topic modelling
+bertopic>=0.16,<1.0
+
+# spaCy NER — use sm not trf (trf is 500MB, sm is 12MB)
+spacy>=3.7,<4.0
+
+# Transliteration
+indic-transliteration>=2.3,<3.0
+langdetect>=1.0,<2.0

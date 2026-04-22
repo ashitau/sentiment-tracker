@@ -1,13 +1,20 @@
 """
 BERTopic-based topic modelling.
 Groups posts into narrative clusters without manual label creation.
+Falls back to frequency-based keyword extraction when bertopic/torch are absent.
 """
 from dataclasses import dataclass, field
 from typing import Optional
-import numpy as np
-from bertopic import BERTopic
-from sentence_transformers import SentenceTransformer
 from loguru import logger
+
+try:
+    import numpy as np
+    from bertopic import BERTopic
+    from sentence_transformers import SentenceTransformer
+    _BERTOPIC_AVAILABLE = True
+except ImportError:
+    _BERTOPIC_AVAILABLE = False
+    logger.warning("bertopic/sentence-transformers not installed — topic modelling disabled (install requirements-nlp.txt)")
 
 EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 MIN_TOPIC_SIZE = 5
@@ -26,10 +33,12 @@ class TopicCluster:
 
 
 _model: Optional[BERTopic] = None
-_embedder: Optional[SentenceTransformer] = None
+_embedder = None
 
 
-def _get_embedder() -> SentenceTransformer:
+def _get_embedder():
+    if not _BERTOPIC_AVAILABLE:
+        return None
     global _embedder
     if _embedder is None:
         logger.info(f"Loading sentence embedder: {EMBEDDING_MODEL}")
@@ -37,11 +46,16 @@ def _get_embedder() -> SentenceTransformer:
     return _embedder
 
 
-def fit_topics(documents: list[str], timestamps: Optional[list] = None) -> tuple[BERTopic, list[int], np.ndarray]:
+def fit_topics(documents: list[str], timestamps: Optional[list] = None) -> tuple:
     """
     Fit BERTopic on a corpus of documents.
     Returns (model, topic_assignments, embeddings).
+    Returns (None, [], []) when bertopic is not installed.
     """
+    if not _BERTOPIC_AVAILABLE:
+        logger.info("BERTopic not available — skipping topic modelling")
+        return None, [], []
+
     global _model
     embedder = _get_embedder()
 

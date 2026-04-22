@@ -5,8 +5,14 @@ Handles Hinglish, ticker aliases, and sector taxonomy resolution.
 import re
 from dataclasses import dataclass, field
 from typing import Optional
-import spacy
 from loguru import logger
+
+try:
+    import spacy
+    _SPACY_AVAILABLE = True
+except ImportError:
+    _SPACY_AVAILABLE = False
+    logger.warning("spacy not installed — NER will use ticker-regex only (install requirements-nlp.txt for full NER)")
 
 # NSE 500 ticker → canonical name (abbreviated — extend with full list)
 TICKER_ALIASES: dict[str, str] = {
@@ -60,12 +66,17 @@ _nlp = None
 
 def _get_nlp():
     global _nlp
+    if not _SPACY_AVAILABLE:
+        return None
     if _nlp is None:
         try:
             _nlp = spacy.load("en_core_web_trf")
         except OSError:
-            logger.warning("en_core_web_trf not found, falling back to en_core_web_sm")
-            _nlp = spacy.load("en_core_web_sm")
+            try:
+                _nlp = spacy.load("en_core_web_sm")
+            except OSError:
+                logger.warning("No spaCy model found — ticker-regex NER only")
+                return None
     return _nlp
 
 
@@ -85,27 +96,27 @@ def extract_entities(text: str) -> list[ExtractedEntity]:
         return []
 
     entities: list[ExtractedEntity] = []
-    nlp = _get_nlp()
-    doc = nlp(text[:10_000])  # cap for performance
-
     seen: set[str] = set()
 
-    # spaCy NER pass
-    for ent in doc.ents:
-        if ent.label_ not in ("ORG", "PERSON", "GPE", "MONEY", "PRODUCT"):
-            continue
-        canonical = _resolve_alias(ent.text)
-        if canonical in seen:
-            continue
-        seen.add(canonical)
-        entities.append(ExtractedEntity(
-            text=ent.text,
-            canonical=canonical,
-            entity_type=ent.label_,
-            sectors=_resolve_sectors(canonical),
-            char_start=ent.start_char,
-            char_end=ent.end_char,
-        ))
+    # spaCy NER pass (skipped gracefully if spacy/model not installed)
+    nlp = _get_nlp()
+    if nlp is not None:
+        doc = nlp(text[:10_000])
+        for ent in doc.ents:
+            if ent.label_ not in ("ORG", "PERSON", "GPE", "MONEY", "PRODUCT"):
+                continue
+            canonical = _resolve_alias(ent.text)
+            if canonical in seen:
+                continue
+            seen.add(canonical)
+            entities.append(ExtractedEntity(
+                text=ent.text,
+                canonical=canonical,
+                entity_type=ent.label_,
+                sectors=_resolve_sectors(canonical),
+                char_start=ent.start_char,
+                char_end=ent.end_char,
+            ))
 
     # Ticker regex pass (catches NSE tickers missed by spaCy)
     for match in re.finditer(r"\b([A-Z]{2,10})\b", text):

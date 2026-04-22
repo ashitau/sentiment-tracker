@@ -136,9 +136,9 @@ async def run_pipeline(window_hours: int = 6) -> DashboardSnapshot:
 
     ranked = rank_signals(signals, top_n=50)
 
-    # Topic modelling
-    topic_model, topic_assignments, _ = fit_topics(texts[:2000])  # cap for speed
-    clusters = extract_topic_clusters(topic_model, texts[:2000], topic_assignments)
+    # Topic modelling (no-op when bertopic not installed)
+    topic_model, topic_assignments, _ = fit_topics(texts[:2000])
+    clusters = extract_topic_clusters(topic_model, texts[:2000], topic_assignments) if topic_model is not None else []
 
     # Weak signal pipeline — runs independently on broad (non-financial) ingestion
     broad_topics: list[dict] = []

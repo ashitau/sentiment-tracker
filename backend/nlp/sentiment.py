@@ -1,26 +1,39 @@
 """
 Aspect-Based Sentiment Analysis for financial text.
-Uses FinBERT for document-level and PyABSA for entity-level sentiment.
-Falls back gracefully if GPU is unavailable.
+Uses FinBERT for document-level sentiment.
+Falls back to a keyword heuristic when transformers/torch are not installed
+(e.g. on Railway where NLP deps are not in requirements.txt).
 """
 from dataclasses import dataclass
 from typing import Optional
-import torch
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 from loguru import logger
+
+try:
+    import torch
+    from transformers import pipeline as hf_pipeline
+    _TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    _TRANSFORMERS_AVAILABLE = False
+    logger.warning("transformers/torch not installed — using keyword-heuristic sentiment fallback")
 
 FINBERT_MODEL = "ProsusAI/finbert"
 MAX_LENGTH = 512
 
 _finbert_pipeline = None
 
+# Simple keyword fallback when transformers not installed
+_BULLISH_WORDS = {"buy", "bull", "rally", "surge", "beat", "profit", "growth", "positive", "strong", "gain", "up", "rise"}
+_BEARISH_WORDS = {"sell", "bear", "fall", "drop", "miss", "loss", "weak", "negative", "crash", "down", "decline", "cut"}
+
 
 def _get_finbert():
+    if not _TRANSFORMERS_AVAILABLE:
+        return None
     global _finbert_pipeline
     if _finbert_pipeline is None:
         device = 0 if torch.cuda.is_available() else -1
         logger.info(f"Loading FinBERT on {'GPU' if device == 0 else 'CPU'}")
-        _finbert_pipeline = pipeline(
+        _finbert_pipeline = hf_pipeline(
             "text-classification",
             model=FINBERT_MODEL,
             tokenizer=FINBERT_MODEL,
@@ -29,6 +42,17 @@ def _get_finbert():
             truncation=True,
         )
     return _finbert_pipeline
+
+
+def _keyword_sentiment(text: str) -> "SentimentResult":
+    words = set(text.lower().split())
+    bull = len(words & _BULLISH_WORDS)
+    bear = len(words & _BEARISH_WORDS)
+    if bull > bear:
+        return _build_result("positive", 0.65)
+    if bear > bull:
+        return _build_result("negative", 0.65)
+    return _build_result("neutral", 0.50)
 
 
 @dataclass
@@ -43,26 +67,30 @@ class SentimentResult:
 def analyse_document(text: str) -> Optional[SentimentResult]:
     if not text or len(text.strip()) < 10:
         return None
+    pipe = _get_finbert()
+    if pipe is None:
+        return _keyword_sentiment(text)
     try:
-        pipe = _get_finbert()
         result = pipe(text[:MAX_LENGTH])[0]
         return _build_result(result["label"].lower(), result["score"])
     except Exception as exc:
         logger.warning(f"FinBERT inference failed: {exc}")
-        return None
+        return _keyword_sentiment(text)
 
 
 def analyse_batch(texts: list[str], batch_size: int = 32) -> list[Optional[SentimentResult]]:
     if not texts:
         return []
+    pipe = _get_finbert()
+    if pipe is None:
+        return [_keyword_sentiment(t) for t in texts]
     try:
-        pipe = _get_finbert()
         truncated = [t[:MAX_LENGTH] for t in texts]
         raw_results = pipe(truncated, batch_size=batch_size)
         return [_build_result(r["label"].lower(), r["score"]) for r in raw_results]
     except Exception as exc:
-        logger.error(f"Batch sentiment failed: {exc}")
-        return [None] * len(texts)
+        logger.error(f"Batch sentiment failed, falling back to keyword heuristic: {exc}")
+        return [_keyword_sentiment(t) for t in texts]
 
 
 def _build_result(label: str, score: float) -> SentimentResult:
