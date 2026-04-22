@@ -134,7 +134,9 @@ async def send_magic_link(email: str, token: str, base_url: str) -> bool:
                 },
                 timeout=10,
             )
-            resp.raise_for_status()
+            if resp.status_code >= 400:
+                logger.error(f"Resend API {resp.status_code}: {resp.text}")
+                return False
             logger.info(f"Magic link sent to {email}")
             return True
     except Exception as exc:
