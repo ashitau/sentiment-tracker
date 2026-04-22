@@ -106,36 +106,37 @@ def verify_session_jwt(token: str) -> Optional[str]:
     return payload.get("email")
 
 
-# ── Email sending (Resend — free tier covers 3 000 emails/month) ──────────────
+# ── Email sending (Brevo SMTP API — free tier, single-sender verification) ────
 
 async def send_magic_link(email: str, token: str, base_url: str) -> bool:
     """
-    Send a magic link email via Resend API.
-    Set RESEND_API_KEY in .env. Falls back to console-logging in dev.
+    Send a magic link email via Brevo API.
+    Set BREVO_API_KEY and BREVO_FROM_EMAIL in env.
+    Falls back to console-logging in dev (no API key set).
     """
     link = f"{base_url}/auth/verify?token={token}"
-    api_key = os.environ.get("RESEND_API_KEY")
+    api_key = os.environ.get("BREVO_API_KEY")
+    from_email = os.environ.get("BREVO_FROM_EMAIL", "")
 
-    if not api_key or os.environ.get("APP_ENV") == "development":
-        # Dev mode: just log the link so you can click it locally
+    if not api_key or not from_email or os.environ.get("APP_ENV") == "development":
         logger.info(f"[DEV] Magic link for {email}: {link}")
         return True
 
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
-                "https://api.resend.com/emails",
-                headers={"Authorization": f"Bearer {api_key}"},
+                "https://api.brevo.com/v3/smtp/email",
+                headers={"api-key": api_key, "Content-Type": "application/json"},
                 json={
-                    "from": os.environ.get("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
-                    "to": [email],
+                    "sender": {"name": "ET Now Sentiment Tracker", "email": from_email},
+                    "to": [{"email": email}],
                     "subject": "Your login link — ET Now Sentiment Tracker",
-                    "html": _email_html(link),
+                    "htmlContent": _email_html(link),
                 },
                 timeout=10,
             )
             if resp.status_code >= 400:
-                logger.error(f"Resend API {resp.status_code}: {resp.text}")
+                logger.error(f"Brevo API {resp.status_code}: {resp.text}")
                 return False
             logger.info(f"Magic link sent to {email}")
             return True
