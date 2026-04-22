@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+.env
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ML model cache
+.cache/
+*.pt
+*.bin
+models/
+
+# OS
+.DS_Store
+*.log
+
+# IDE
+.vscode/settings.json
+.idea/
