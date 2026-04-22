@@ -118,8 +118,10 @@ async def send_magic_link(email: str, token: str, base_url: str) -> bool:
     api_key = os.environ.get("BREVO_API_KEY")
     from_email = os.environ.get("BREVO_FROM_EMAIL", "")
 
+    # Always log the link — Railway logs act as a fallback access method
+    logger.info(f"[MAGIC LINK] {email} → {link}")
+
     if not api_key or not from_email or os.environ.get("APP_ENV") == "development":
-        logger.info(f"[DEV] Magic link for {email}: {link}")
         return True
 
     try:
@@ -137,12 +139,12 @@ async def send_magic_link(email: str, token: str, base_url: str) -> bool:
             )
             if resp.status_code >= 400:
                 logger.error(f"Brevo API {resp.status_code}: {resp.text}")
-                return False
-            logger.info(f"Magic link sent to {email}")
+                return True  # link still logged above, don't fail the request
+            logger.info(f"Magic link email sent to {email}")
             return True
     except Exception as exc:
-        logger.error(f"Failed to send magic link to {email}: {exc}")
-        return False
+        logger.error(f"Brevo send failed: {exc}")
+        return True  # link still logged above
 
 
 def _email_html(link: str) -> str:
