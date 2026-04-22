@@ -114,7 +114,7 @@ async def send_magic_link(email: str, token: str, base_url: str) -> bool:
     Set BREVO_API_KEY and BREVO_FROM_EMAIL in env.
     Falls back to console-logging in dev (no API key set).
     """
-    link = f"{base_url}/auth/verify?token={token}"
+    link = f"{base_url}/?token={token}"
     api_key = os.environ.get("BREVO_API_KEY")
     from_email = os.environ.get("BREVO_FROM_EMAIL", "")
 
